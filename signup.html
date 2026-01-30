@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إنشاء حساب - متجر المشروبات</title>
+    <link rel="stylesheet" href="auth-style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="auth-box">
+            <h2>حساب جديد</h2>
+            <form id="signupForm">
+                <input type="text" placeholder="الاسم الكامل" required>
+                <input type="email" placeholder="البريد الإلكتروني" required>
+                <input type="password" placeholder="كلمة المرور" required>
+                <button type="submit" class="btn-main">تسجيل الحساب</button>
+            </form>
+            <p class="switch">لديك حساب بالفعل؟ <a href="login.html">سجل دخولك</a></p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('signupForm').onsubmit = function(e) {
+            e.preventDefault();
+            alert("تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.");
+            window.location.href = "login.html";
+        };
+    </script>
+</body>
+</html>

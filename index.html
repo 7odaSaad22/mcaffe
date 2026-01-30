@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر المشروبات - واجهة العميل</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="orderSection" class="main-container">
+        <header class="customer-header">
+            <h1>☕ متجر المشروبات</h1>
+            <div class="user-info">
+                <span id="userNameDisplay"></span>
+                <button onclick="customerLogout()" class="logout-btn">تسجيل خروج</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="orders-layout">
+                <div class="products-section">
+                    <h2>📋 اختر المشروبات</h2>
+                    <div style="margin-bottom:10px;">
+                        <button onclick="addAllProductsToOrder()" class="add-all-btn">إضافة جميع المنتجات للطلب</button>
+                    </div>
+                    <div class="product-grid" id="productGrid"></div>
+                </div>
+
+                <div class="order-summary">
+                    <h2>🛒 سلة الطلب</h2>
+                    <div id="orderItems" class="order-items">
+                        <p style="color: #999;">لم يتم اختيار أي عناصر</p>
+                    </div>
+                    <div class="order-notes">
+                        <label for="orderNotes">ملاحظات (اختياري):</label>
+                        <textarea id="orderNotes" placeholder="اكتب ملاحظتك هنا..." rows="3" style="width:100%; margin-top:6px;"></textarea>
+                    </div>
+                    <div class="order-total">
+                        <h3>عدد العناصر: <span id="totalPrice">0</span></h3>
+                    </div>
+                    <button onclick="submitOrder()" class="submit-btn">✓ إرسال الطلب</button>
+                    <button onclick="clearOrder()" class="clear-btn">✕ مسح الطلب</button>
+                </div>
+            </div>
+
+            <div class="orders-tracking">
+                <h2>📦 تتبع طلباتك</h2>
+                <div id="ordersHistory" class="orders-history">
+                    <p style="color: #999; text-align: center;">لا توجد طلبات</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const products = ['شاي','شاي اخض','يانسون','نعناع','كركدية','قرفة','جنزبيل','كوفي ميكس','كوفي ميكس 4*1','نسكافيه3*1','نسكافيه 2*1','نسكافيه بلاك','كابتشينو بندق','كابتشينو موكا','كابتشينو لاتيه','هوت شوكلت','قهوة تركي','قهوة فرنساوي','قرفة بحليب','شاي بحليب'];
+        let currentOrder = [];
+
+        window.addEventListener('load', function() {
+            const customer = localStorage.getItem('currentCustomer');
+            if (!customer) { window.location.href = "login.html"; }
+            else {
+                document.getElementById('userNameDisplay').textContent = `مرحباً، ${customer}`;
+                renderProducts();
+                loadCustomerOrders();
+                setInterval(loadCustomerOrders, 5000);
+            }
+        });
+
+        function customerLogout() {
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+            products.forEach((name, idx) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<h3>${name}</h3><div class="quantity-selector"><button onclick="decreaseQty(${idx})">-</button><input type="number" id="qty${idx}" value="0" min="0" readonly><button onclick="increaseQty(${idx})">+</button></div><button onclick="addToOrder(${idx}, '${name}')" class="add-btn">إضافة للطلب</button>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function increaseQty(index) { document.getElementById('qty' + index).value++; }
+        function decreaseQty(index) { 
+            let input = document.getElementById('qty' + index);
+            if (input.value > 0) input.value--;
+        }
+
+        function addToOrder(index, name) {
+            const qty = parseInt(document.getElementById('qty' + index).value);
+            if (qty === 0) return alert('يرجى اختيار الكمية');
+            const existing = currentOrder.find(item => item.name === name);
+            if (existing) existing.qty += qty; else currentOrder.push({ name, qty });
+            document.getElementById('qty' + index).value = 0;
+            updateOrderDisplay();
+        }
+
+        function updateOrderDisplay() {
+            const orderItemsDiv = document.getElementById('orderItems');
+            let total = 0;
+            if (currentOrder.length === 0) {
+                orderItemsDiv.innerHTML = '<p style="color: #999;">لم يتم اختيار أي عناصر</p>';
+                document.getElementById('totalPrice').textContent = '0';
+                return;
+            }
+            let html = '<ul style="list-style: none; padding: 0;">';
+            currentOrder.forEach((item, idx) => {
+                total += item.qty;
+                html += `<li class="order-item"><span>${item.name} (${item.qty}x)</span><button onclick="removeFromOrder(${idx})" class="remove-btn">✕</button></li>`;
+            });
+            orderItemsDiv.innerHTML = html + '</ul>';
+            document.getElementById('totalPrice').textContent = total;
+        }
+
+        function removeFromOrder(index) { currentOrder.splice(index, 1); updateOrderDisplay(); }
+        function clearOrder() { currentOrder = []; updateOrderDisplay(); }
+
+        function submitOrder() {
+            if (currentOrder.length === 0) return alert('أضف عنصراً أولاً');
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            orders.push({ id: Date.now(), customerName: localStorage.getItem('currentCustomer'), items: currentOrder, date: new Date().toLocaleString('ar-EG'), status: 'قيد المراجعة', notes: document.getElementById('orderNotes').value });
+            localStorage.setItem('orders', JSON.stringify(orders));
+            alert('تم الإرسال');
+            clearOrder();
+            loadCustomerOrders();
+        }
+
+        function loadCustomerOrders() {
+            const customerName = localStorage.getItem('currentCustomer');
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const customerOrders = orders.filter(o => o.customerName === customerName);
+            const history = document.getElementById('ordersHistory');
+            if (customerOrders.length === 0) return;
+            let html = '';
+            customerOrders.forEach(o => {
+                html += `<div class="order-card"><strong>طلب #${o.id}</strong> - ${o.status}<p>${o.items.map(i => i.name).join(', ')}</p></div>`;
+            });
+            history.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

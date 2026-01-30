@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر المشروبات - لوحة الإدمن</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="adminSection" class="main-container">
+        <header class="admin-header">
+            <h1>📊 لوحة تحكم الإدمن</h1>
+            <div class="user-info">
+                <span id="adminNameDisplay"></span>
+                <button onclick="adminLogout()" class="logout-btn">تسجيل خروج</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="tabs">
+                <button onclick="switchTab('orders')" class="tab-btn active">📋 الطلبات</button>
+                <button onclick="switchTab('inventory')" class="tab-btn">📦 إدارة المخزون</button>
+                <button onclick="switchTab('reports')" class="tab-btn">📈 التقارير الأسبوعية</button>
+            </div>
+
+            <div id="ordersTab" class="tab-content active">
+                <h2>إدارة الطلبات</h2>
+                <div id="ordersContainer" class="orders-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اسم العميل</th>
+                                <th>المنتجات</th>
+                                <th>ملاحظات</th>
+                                <th>التاريخ</th>
+                                <th>اسم المستلم</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody"></tbody>
+                    </table>
+                    <p id="noOrders" style="text-align: center; color: #999; margin-top: 20px;">لا توجد طلبات حالياً</p>
+                </div>
+            </div>
+
+            <div id="inventoryTab" class="tab-content">
+                <h2>إدارة المخزون</h2>
+                <div class="inventory-grid" id="inventoryGrid"></div>
+            </div>
+
+            <div id="reportsTab" class="tab-content">
+                <h2>التقارير الأسبوعية</h2>
+                <div class="reports-controls">
+                    <button onclick="generateWeeklyReport()" class="report-btn">📊 إنشاء تقرير هذا الأسبوع</button>
+                    <button onclick="downloadReport()" class="report-btn">💾 تحميل التقرير</button>
+                </div>
+                <div id="reportContent" class="report-content">
+                    <p style="color: #999; text-align: center;">اضغط على "إنشاء تقرير" لعرض التقارير</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const adminUsers = { 'HITLER': { password: '1234', name: 'هتلر ' }, 'manager': { password: '5678', name: 'مدير العمليات' } };
+        const defaultInventory = { 'شاي': { key: 'p0', stock: 50, price: 15 }, 'شاي اخض': { key: 'p1', stock: 50, price: 15 }, 'يانسون': { key: 'p2', stock: 50, price: 15 }, 'نعناع': { key: 'p3', stock: 50, price: 15 }, 'كركدية': { key: 'p4', stock: 50, price: 15 }, 'قرفة': { key: 'p5', stock: 50, price: 15 }, 'جنزبيل': { key: 'p6', stock: 50, price: 15 }, 'كوفي ميكس': { key: 'p7', stock: 50, price: 15 }, 'كوفي ميكس 4*1': { key: 'p8', stock: 50, price: 15 }, 'نسكافيه3*1': { key: 'p9', stock: 50, price: 15 }, 'نسكافيه 2*1': { key: 'p10', stock: 50, price: 15 }, 'نسكافيه بلاك': { key: 'p11', stock: 50, price: 15 }, 'كابتشينو بندق': { key: 'p12', stock: 50, price: 15 }, 'كابتشينو موكا': { key: 'p13', stock: 50, price: 15 }, 'كابتشينو لاتيه': { key: 'p14', stock: 50, price: 15 }, 'هوت شوكلت': { key: 'p15', stock: 50, price: 15 }, 'قهوة تركي': { key: 'p16', stock: 50, price: 15 }, 'قهوة فرنساوي': { key: 'p17', stock: 50, price: 15 }, 'قرفة بحليب': { key: 'p18', stock: 50, price: 15 }, 'شاي بحليب': { key: 'p19', stock: 50, price: 15 } };
+        let inventory = {};
+
+        window.addEventListener('load', function() {
+            const admin = localStorage.getItem('adminUser');
+            if (!admin || !adminUsers[admin]) { window.location.href = "login.html"; }
+            else {
+                document.getElementById('adminNameDisplay').textContent = `مرحباً، ${adminUsers[admin].name}`;
+                loadInventory(); loadOrders();
+            }
+        });
+
+        function adminLogout() { localStorage.removeItem('adminUser'); window.location.href = "login.html"; }
+
+        function loadInventory() {
+            const savedRaw = localStorage.getItem('inventory');
+            inventory = Object.assign({}, defaultInventory);
+            if (savedRaw) {
+                let saved = JSON.parse(savedRaw);
+                for (let n in saved) inventory[n] = saved[n];
+            }
+            renderInventoryGrid();
+        }
+
+        function renderInventoryGrid() {
+            const grid = document.getElementById('inventoryGrid');
+            grid.innerHTML = '';
+            for (const [name, data] of Object.entries(inventory)) {
+                grid.innerHTML += `<div class="inventory-card"><h3>${name}</h3><p>السعر: ${data.price}</p><div class="inventory-info"><div class="quantity-input"><button onclick="changeInv('${data.key}',-1)">-</button><input type="number" id="stock-${data.key}" value="${data.stock}"><button onclick="changeInv('${data.key}',1)">+</button></div><button onclick="saveInv('${data.key}')" class="save-btn">💾 حفظ</button></div></div>`;
+            }
+        }
+
+        function changeInv(key, val) { let inp = document.getElementById('stock-'+key); inp.value = Math.max(0, parseInt(inp.value) + val); }
+        function saveInv(key) { 
+            for(let n in inventory) if(inventory[n].key === key) inventory[n].stock = parseInt(document.getElementById('stock-'+key).value);
+            localStorage.setItem('inventory', JSON.stringify(inventory)); alert('تم الحفظ');
+        }
+
+        function loadOrders() {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '';
+            if (orders.length === 0) { document.getElementById('noOrders').style.display = 'block'; return; }
+            document.getElementById('noOrders').style.display = 'none';
+            orders.forEach((o, i) => {
+                const statusClass = o.status === 'موافق عليه' ? 'approved' : 'pending';
+                tbody.innerHTML += `<tr><td>${i+1}</td><td>${o.customerName}</td><td>${o.items.map(it=>`${it.name} (${it.qty})`).join(', ')}</td><td>${o.notes||'-'}</td><td>${o.date}</td><td>${o.adminRecipient||'-'}</td><td><span class="status ${statusClass}">${o.status}</span></td><td class="actions">${o.status === 'قيد المراجعة' ? `<button onclick="approveOrder(${i})" class="approve-btn">✓</button><button onclick="rejectOrder(${i})" class="reject-btn">✕</button>` : `<button onclick="alert('طلب مكتمل')" class="view-btn">👁️</button>`}</td></tr>`;
+            });
+        }
+
+        function approveOrder(i) {
+            let orders = JSON.parse(localStorage.getItem('orders'));
+            let admin = localStorage.getItem('adminUser');
+            orders[i].items.forEach(it => { if(inventory[it.name]) inventory[it.name].stock -= it.qty; });
+            orders[i].status = 'موافق عليه';
+            orders[i].adminRecipient = adminUsers[admin].name;
+            localStorage.setItem('orders', JSON.stringify(orders));
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            loadOrders(); renderInventoryGrid();
+        }
+
+        function rejectOrder(i) {
+            let orders = JSON.parse(localStorage.getItem('orders'));
+            orders.splice(i, 1);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            loadOrders();
+        }
+
+        // --- استعادة كود التقارير التفصيلي الأصلي ---
+        function generateWeeklyReport() {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const approvedOrders = orders.filter(o => o.status === 'موافق عليه');
+            if (approvedOrders.length === 0) { document.getElementById('reportContent').innerHTML = '<p>لا توجد طلبات</p>'; return; }
+
+            const customerOrders = {};
+            approvedOrders.forEach(order => {
+                if (!customerOrders[order.customerName]) customerOrders[order.customerName] = [];
+                customerOrders[order.customerName].push(order);
+            });
+
+            let reportHTML = `<div class="report-header"><h3>📊 التقرير الأسبوعي التفصيلي</h3><p>تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}</p></div>`;
+            
+            for (const [name, orders] of Object.entries(customerOrders)) {
+                reportHTML += `<div class="customer-report"><h5>👤 العميل: ${name}</h5><table class="admin-table"><thead><tr><th>رقم الطلب</th><th>التاريخ</th><th>المنتجات</th><th>المستلم</th><th>ملاحظات</th></tr></thead><tbody>`;
+                orders.forEach(o => {
+                    reportHTML += `<tr><td>#${o.id}</td><td>${o.date}</td><td>${o.items.map(it=>`${it.name} (${it.qty})`).join(', ')}</td><td>${o.adminRecipient}</td><td>${o.notes || '-'}</td></tr>`;
+                });
+                reportHTML += `</tbody></table></div>`;
+            }
+            document.getElementById('reportContent').innerHTML = reportHTML;
+        }
+
+        function downloadReport() {
+            const content = document.getElementById('reportContent').innerText;
+            const blob = new Blob([content], {type: 'text/plain'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'تقرير_المبيعات.txt';
+            a.click();
+        }
+
+        function switchTab(t) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(t+'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
