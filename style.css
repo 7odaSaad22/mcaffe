@@ -762,3 +762,107 @@ th {
 .customer-table tr:hover {
     background: #f9f9f9;
 }
+/* --- تحسينات التجاوب مع الهواتف (بدون تعديل الأصل) --- */
+
+/* 1. الحاوية الرئيسية: تأكد من وجود مسافات مريحة على الجوانب */
+.container {
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* 2. الهيدر: ترتيب العناصر فوق بعضها في الشاشات الصغيرة */
+.admin-header, .customer-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 20px 10px;
+    text-align: center;
+}
+
+@media (min-width: 768px) {
+    .admin-header, .customer-header {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+/* 3. التبويبات: جعل الأزرار مرنة وقابلة للالتفاف */
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1 1 auto;
+    min-width: 100px;
+    padding: 12px 8px;
+    font-size: 14px;
+}
+
+/* 4. الجداول: أهم جزء - جعلها قابلة للسحب يميناً ويساراً */
+.orders-table-container, .report-content {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* سحب ناعم على الآيفون */
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.admin-table {
+    min-width: 700px; /* يحافظ على شكل الجدول ويمنع تداخل النصوص */
+}
+
+/* 5. شبكة المخزون والمنتجات: تحويلها لعمود واحد أو عمودين حسب الشاشة */
+.inventory-grid, .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+    gap: 15px;
+}
+
+@media (min-width: 480px) {
+    .inventory-grid, .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+/* 6. البطاقات: تحسين الأزرار وحقول الإدخال للمس */
+.inventory-card, .card, .order-card {
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+input[type="number"], .quantity-input input {
+    height: 40px; /* تكبير حقل الإدخال ليسهل الضغط عليه */
+    font-size: 16px; /* يمنع الزوم التلقائي في الآيفون */
+}
+
+button {
+    min-height: 44px; /* مقاس الزر المثالي حسب معايير جوجل للموبايل */
+    cursor: pointer;
+}
+
+/* 7. السلة وتتبع الطلبات: جعلها تحت بعضها في الموبايل */
+.orders-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+@media (min-width: 992px) {
+    .orders-layout {
+        flex-direction: row;
+    }
+}
+
+/* تحسين التقارير التفصيلية على الموبايل */
+.customer-report {
+    margin-bottom: 30px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 15px;
+}
